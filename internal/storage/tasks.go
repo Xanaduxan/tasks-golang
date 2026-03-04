@@ -31,7 +31,7 @@ func (s *TaskStorage) Create(task Task) error {
 	return err
 }
 
-func (s *TaskStorage) GetById(id uuid.UUID) (Task, error) {
+func (s *TaskStorage) GetByID(id uuid.UUID) (Task, error) {
 	var task Task
 
 	err := s.DB.QueryRow(`

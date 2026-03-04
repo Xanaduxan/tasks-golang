@@ -41,7 +41,7 @@ func (s *UserStorage) GetByEmail(email string) (User, error) {
 	return user, err
 }
 
-func (s *UserStorage) GetById(id uuid.UUID) (User, error) {
+func (s *UserStorage) GetByID(id uuid.UUID) (User, error) {
 	var user User
 
 	err := s.DB.QueryRow(`

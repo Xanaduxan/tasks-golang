@@ -22,7 +22,7 @@ func (s *Service) getUser(id uuid.UUID) (storage.User, error) {
 	if id == uuid.Nil {
 		return storage.User{}, ErrInvalidInput
 	}
-	u, err := s.users.GetById(id)
+	u, err := s.users.GetByID(id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return storage.User{}, ErrNotFound
@@ -36,7 +36,7 @@ func (s *Service) getTask(taskID uuid.UUID) (storage.Task, error) {
 	if taskID == uuid.Nil {
 		return storage.Task{}, ErrInvalidInput
 	}
-	t, err := s.tasks.GetById(taskID)
+	t, err := s.tasks.GetByID(taskID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return storage.Task{}, ErrNotFound
