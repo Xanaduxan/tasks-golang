@@ -7,7 +7,7 @@ import (
 	"github.com/Xanaduxan/tasks-golang/internal/service/tasks"
 )
 
-func handleTaskError(w http.ResponseWriter, err error) {
+func handleError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, tasks.ErrInvalidInput):
 		http.Error(w, "invalid input", http.StatusBadRequest)

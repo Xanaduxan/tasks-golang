@@ -54,7 +54,7 @@ func GetTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := taskService.GetTask(userID, taskID)
 	if err != nil {
-		handleTaskError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -80,7 +80,7 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	newTaskID, err := taskService.CreateTask(userID, req.Name, req.Deadline)
 	if err != nil {
-		handleTaskError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -101,7 +101,7 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := taskService.DeleteTask(userID, taskID); err != nil {
-		handleTaskError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := taskService.UpdateTask(userID, taskID, req.Name, req.Deadline); err != nil {
-		handleTaskError(w, err)
+		handleError(w, err)
 		return
 	}
 

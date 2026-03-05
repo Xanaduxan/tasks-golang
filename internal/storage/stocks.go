@@ -99,3 +99,14 @@ func (s *StockStorage) GetStocks() ([]Stock, error) {
 
 	return stocks, rows.Err()
 }
+
+func (s *StockStorage) Increase(productID uuid.UUID, qty int64) error {
+	_, err := s.DB.Exec(`
+		INSERT INTO stocks (product_id, quantity)
+		VALUES ($1, $2)
+		ON CONFLICT (product_id)
+		DO UPDATE SET quantity = stocks.quantity + $2
+	`, productID, qty)
+
+	return err
+}
