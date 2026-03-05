@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/Xanaduxan/tasks-golang/internal/service/products"
@@ -37,7 +35,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	p, err := productService.GetProduct(id)
 	if err != nil {
-		handleProductError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -57,7 +55,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	newID, err := productService.CreateProduct(req.Name, req.Price)
 	if err != nil {
-		handleProductError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -71,7 +69,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := productService.DeleteProduct(id); err != nil {
-		handleProductError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -95,7 +93,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := productService.UpdateProduct(id, req.Name, req.Price); err != nil {
-		handleProductError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -116,16 +114,6 @@ func (req UpdateProductRequest) Validate() error {
 	return nil
 }
 
-func handleProductError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, products.ErrInvalidInput):
-		http.Error(w, "invalid input", http.StatusBadRequest)
-	case errors.Is(err, products.ErrNotFound), errors.Is(err, sql.ErrNoRows):
-		http.Error(w, "not found", http.StatusNotFound)
-	default:
-		http.Error(w, "internal error", http.StatusInternalServerError)
-	}
-}
 func parseUUIDParam(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, bool) {
 	idStr := r.PathValue(name)
 

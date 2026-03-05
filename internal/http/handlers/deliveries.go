@@ -1,9 +1,8 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
+
 	"net/http"
 
 	"github.com/Xanaduxan/tasks-golang/internal/service/deliveries"
@@ -51,7 +50,7 @@ func GetDelivery(w http.ResponseWriter, r *http.Request) {
 
 	d, items, err := deliveryService.GetDelivery(userID, deliveryID)
 	if err != nil {
-		handleDeliveryError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -88,7 +87,7 @@ func CreateDelivery(w http.ResponseWriter, r *http.Request) {
 
 	newID, err := deliveryService.CreateDelivery(userID, items)
 	if err != nil {
-		handleDeliveryError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -109,7 +108,7 @@ func DeleteDelivery(w http.ResponseWriter, r *http.Request) {
 
 	_, err := deliveryService.DeleteDelivery(userID, deliveryID)
 	if err != nil {
-		handleDeliveryError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -143,7 +142,7 @@ func UpdateDelivery(w http.ResponseWriter, r *http.Request) {
 		UserID: userID,
 		Status: req.Status,
 	}); err != nil {
-		handleDeliveryError(w, err)
+		handleError(w, err)
 		return
 	}
 
@@ -168,18 +167,5 @@ func (req UpdateDeliveryRequest) Validate() error {
 		return nil
 	default:
 		return deliveries.ErrInvalidInput
-	}
-}
-
-func handleDeliveryError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, deliveries.ErrInvalidInput):
-		http.Error(w, "invalid input", http.StatusBadRequest)
-	case errors.Is(err, deliveries.ErrForbidden):
-		http.Error(w, "forbidden", http.StatusForbidden)
-	case errors.Is(err, deliveries.ErrNotFound), errors.Is(err, sql.ErrNoRows):
-		http.Error(w, "not found", http.StatusNotFound)
-	default:
-		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
