@@ -103,33 +103,49 @@ func (s *Service) GetDelivery(userID, deliveryID uuid.UUID) (storage.Delivery, [
 	return d, items, nil
 }
 
-func (s *Service) UpdateDelivery(delivery storage.Delivery) error {
-	if delivery.ID == uuid.Nil || delivery.UserID == uuid.Nil {
+func (s *Service) UpdateDelivery(userID, deliveryID uuid.UUID, status storage.DeliveryStatus) error {
+	if userID == uuid.Nil || deliveryID == uuid.Nil {
 		return ErrInvalidInput
 	}
 
-	if _, err := s.users.GetByID(delivery.UserID); err != nil {
+	if _, err := s.users.GetByID(userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
 		return err
 	}
 
-	existing, err := s.deliveries.GetByID(delivery.ID)
+	existing, err := s.deliveries.GetByID(deliveryID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNotFound
 		}
 		return err
 	}
-	if existing.UserID != delivery.UserID {
+	if existing.UserID != userID {
 		return ErrForbidden
 	}
 
+	return s.UpdateDeliveryStatus(deliveryID, status)
+}
+
+func (s *Service) UpdateDeliveryStatus(deliveryID uuid.UUID, status storage.DeliveryStatus) error {
+	if deliveryID == uuid.Nil {
+		return ErrInvalidInput
+	}
+
+	existing, err := s.deliveries.GetByID(deliveryID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+
 	rows, err := s.deliveries.Update(storage.Delivery{
-		ID:        delivery.ID,
-		Status:    delivery.Status,
-		UserID:    delivery.UserID,
+		ID:        existing.ID,
+		Status:    status,
+		UserID:    existing.UserID,
 		UpdatedAt: time.Now(),
 	})
 	if err != nil {
@@ -139,8 +155,8 @@ func (s *Service) UpdateDelivery(delivery storage.Delivery) error {
 		return ErrNotFound
 	}
 
-	if existing.Status != storage.StatusAccepted && delivery.Status == storage.StatusAccepted {
-		items, err := s.deliveryItems.GetByDeliveryID(delivery.ID)
+	if existing.Status != storage.StatusAccepted && status == storage.StatusAccepted {
+		items, err := s.deliveryItems.GetByDeliveryID(deliveryID)
 		if err != nil {
 			return err
 		}

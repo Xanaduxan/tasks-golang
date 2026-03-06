@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-
 	"net/http"
 
+	"github.com/Xanaduxan/tasks-golang/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/internal/service/deliveries"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/google/uuid"
@@ -33,8 +33,15 @@ type DeliveryResponse struct {
 }
 
 var deliveryService *deliveries.Service
+var deliveryQueue *queue.DeliveryQueue
 
-func SetDeliveryService(s *deliveries.Service) { deliveryService = s }
+func SetDeliveryService(s *deliveries.Service) {
+	deliveryService = s
+}
+
+func SetDeliveryQueue(q *queue.DeliveryQueue) {
+	deliveryQueue = q
+}
 
 func GetDelivery(w http.ResponseWriter, r *http.Request) {
 	userID, ok := userIDFromContext(r)
@@ -91,6 +98,10 @@ func CreateDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if deliveryQueue != nil {
+		deliveryQueue.Push(newID)
+	}
+
 	writeJSON(w, http.StatusCreated, CreateDeliveryResponse{ID: newID})
 }
 
@@ -137,11 +148,7 @@ func UpdateDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := deliveryService.UpdateDelivery(storage.Delivery{
-		ID:     deliveryID,
-		UserID: userID,
-		Status: req.Status,
-	}); err != nil {
+	if err := deliveryService.UpdateDelivery(userID, deliveryID, req.Status); err != nil {
 		handleError(w, err)
 		return
 	}
