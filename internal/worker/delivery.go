@@ -22,14 +22,36 @@ func NewDeliveryWorker(queue *queue.DeliveryQueue, s *deliveries.Service) *Deliv
 }
 
 func (w *DeliveryWorker) Start() {
+
 	go func() {
 		for id := range w.queue.GetJobs() {
-			time.Sleep(1 * time.Second)
-
 			err := w.service.UpdateDeliveryStatus(id, storage.StatusAccepted)
 			if err != nil {
 				log.Println("worker error:", err)
 			}
 		}
 	}()
+
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+
+		w.enqueuePending()
+
+		for range ticker.C {
+			w.enqueuePending()
+		}
+	}()
+}
+
+func (w *DeliveryWorker) enqueuePending() {
+	d, err := w.service.GetDeliveriesNotAccepted()
+	if err != nil {
+		log.Println("enqueue pending deliveries error:", err)
+		return
+	}
+
+	for _, delivery := range d {
+		w.queue.Push(delivery.ID)
+	}
 }

@@ -98,10 +98,6 @@ func CreateDelivery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if deliveryQueue != nil {
-		deliveryQueue.Push(newID)
-	}
-
 	writeJSON(w, http.StatusCreated, CreateDeliveryResponse{ID: newID})
 }
 

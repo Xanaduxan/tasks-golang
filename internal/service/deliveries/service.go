@@ -103,6 +103,10 @@ func (s *Service) GetDelivery(userID, deliveryID uuid.UUID) (storage.Delivery, [
 	return d, items, nil
 }
 
+func (s *Service) GetDeliveriesNotAccepted() ([]storage.Delivery, error) {
+	return s.deliveries.GetAllNotAccepted()
+}
+
 func (s *Service) UpdateDelivery(userID, deliveryID uuid.UUID, status storage.DeliveryStatus) error {
 	if userID == uuid.Nil || deliveryID == uuid.Nil {
 		return ErrInvalidInput

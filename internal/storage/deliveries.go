@@ -110,3 +110,30 @@ func (s *DeliveryStorage) GetByUserID(userID uuid.UUID) ([]Delivery, error) {
 
 	return deliveries, rows.Err()
 }
+
+func (s *DeliveryStorage) GetAllNotAccepted() ([]Delivery, error) {
+	rows, err := s.DB.Query(`
+		SELECT id, status, user_id, updated_at
+		FROM deliveries
+		WHERE status <> $1
+	`, StatusAccepted)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var deliveries []Delivery
+	for rows.Next() {
+		var d Delivery
+		if err := rows.Scan(&d.ID, &d.Status, &d.UserID, &d.UpdatedAt); err != nil {
+			return nil, err
+		}
+		deliveries = append(deliveries, d)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return deliveries, nil
+}
