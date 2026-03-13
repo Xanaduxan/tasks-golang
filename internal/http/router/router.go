@@ -7,7 +7,7 @@ import (
 	"github.com/Xanaduxan/tasks-golang/internal/http/handlers/middleware"
 )
 
-func New(jwtSecret []byte) http.Handler {
+func New(jwtSecret []byte, wsHandler http.Handler) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /login", handlers.Login)
@@ -63,10 +63,39 @@ func New(jwtSecret []byte) http.Handler {
 		"DELETE /delivery/{id}",
 		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.DeleteDelivery)),
 	)
+
 	mux.Handle(
 		"GET /stock",
 		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.GetStocks)),
 	)
+
+	mux.Handle(
+		"GET /group/{id}",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.GetGroup)),
+	)
+	mux.Handle(
+		"POST /group",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.CreateGroup)),
+	)
+
+	mux.Handle(
+		"GET /group/{group_id}/member",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.GetGroupMembers)),
+	)
+	mux.Handle(
+		"POST /group/{group_id}/member",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.CreateGroupMember)),
+	)
+	mux.Handle(
+		"PUT /group/{group_id}/member/{user_id}",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.UpdateGroupMember)),
+	)
+	mux.Handle(
+		"DELETE /group/{group_id}/member/{user_id}",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(handlers.DeleteGroupMember)),
+	)
+
+	mux.Handle("GET /ws", wsHandler)
 
 	return mux
 }

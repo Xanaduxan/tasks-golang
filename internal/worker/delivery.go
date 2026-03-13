@@ -25,9 +25,26 @@ func (w *DeliveryWorker) Start() {
 
 	go func() {
 		for id := range w.queue.GetJobs() {
-			err := w.service.UpdateDeliveryStatus(id, storage.StatusAccepted)
+			delivery, err := w.service.GetDeliveryByID(id)
+			if err != nil {
+				log.Println("worker error, delivery not found:", err)
+				continue
+			}
+
+			next, ok := nextStatus(delivery.Status)
+			if !ok {
+				continue
+			}
+
+			err = w.service.UpdateDeliveryStatus(id, next)
 			if err != nil {
 				log.Println("worker error:", err)
+				continue
+			}
+
+			if next != storage.StatusAccepted {
+
+				w.queue.Push(id)
 			}
 		}
 	}()
@@ -53,5 +70,19 @@ func (w *DeliveryWorker) enqueuePending() {
 
 	for _, delivery := range d {
 		w.queue.Push(delivery.ID)
+	}
+}
+func nextStatus(status storage.DeliveryStatus) (storage.DeliveryStatus, bool) {
+	switch status {
+	case storage.StatusAwaiting:
+		return storage.StatusProcessing, true
+	case storage.StatusProcessing:
+		return storage.StatusChecked, true
+	case storage.StatusChecked:
+		return storage.StatusOnPath, true
+	case storage.StatusOnPath:
+		return storage.StatusAccepted, true
+	default:
+		return "", false
 	}
 }

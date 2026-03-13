@@ -12,15 +12,17 @@ import (
 type CreateTaskRequest struct {
 	Name     string     `json:"name"`
 	Deadline *time.Time `json:"deadline"`
-}
-
-type CreateTaskResponse struct {
-	ID uuid.UUID `json:"id"`
+	GroupID  *uuid.UUID `json:"group_id"`
 }
 
 type UpdateTaskRequest struct {
 	Name     string     `json:"name"`
 	Deadline *time.Time `json:"deadline"`
+	GroupID  *uuid.UUID `json:"group_id"`
+}
+
+type CreateTaskResponse struct {
+	ID uuid.UUID `json:"id"`
 }
 
 var taskService *tasks.Service
@@ -78,7 +80,7 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newTaskID, err := taskService.CreateTask(userID, req.Name, req.Deadline)
+	newTaskID, err := taskService.CreateTask(userID, req.Name, req.Deadline, req.GroupID)
 	if err != nil {
 		handleError(w, err)
 		return
@@ -131,7 +133,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := taskService.UpdateTask(userID, taskID, req.Name, req.Deadline); err != nil {
+	if err := taskService.UpdateTask(userID, taskID, req.Name, req.Deadline, req.GroupID); err != nil {
 		handleError(w, err)
 		return
 	}

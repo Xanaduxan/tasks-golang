@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Xanaduxan/tasks-golang/internal/events"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/google/uuid"
 )
@@ -15,6 +16,7 @@ type Service struct {
 	deliveries    *storage.DeliveryStorage
 	deliveryItems *storage.DeliveryItemStorage
 	stocks        *storage.StockStorage
+	notifier      Notifier
 }
 
 func NewService(
@@ -23,6 +25,7 @@ func NewService(
 	deliveries *storage.DeliveryStorage,
 	deliveryItems *storage.DeliveryItemStorage,
 	stocks *storage.StockStorage,
+	notifier Notifier,
 ) *Service {
 	return &Service{
 		products:      products,
@@ -30,6 +33,7 @@ func NewService(
 		deliveries:    deliveries,
 		deliveryItems: deliveryItems,
 		stocks:        stocks,
+		notifier:      notifier,
 	}
 }
 
@@ -146,6 +150,14 @@ func (s *Service) UpdateDeliveryStatus(deliveryID uuid.UUID, status storage.Deli
 		return err
 	}
 
+	if existing.Status == status {
+		return nil
+	}
+
+	if !isValidStatusTransition(existing.Status, status) {
+		return ErrInvalidInput
+	}
+
 	rows, err := s.deliveries.Update(storage.Delivery{
 		ID:        existing.ID,
 		Status:    status,
@@ -168,6 +180,17 @@ func (s *Service) UpdateDeliveryStatus(deliveryID uuid.UUID, status storage.Deli
 			if err := s.stocks.Increase(it.ProductID, it.Quantity); err != nil {
 				return err
 			}
+		}
+	}
+
+	if s.notifier != nil {
+		err := s.notifier.NotifyDeliveryStatusUpdated(events.DeliveryStatusUpdated{
+			DeliveryID: existing.ID,
+			UserID:     existing.UserID,
+			Status:     status,
+		})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -198,4 +221,35 @@ func (s *Service) DeleteDelivery(userID, deliveryID uuid.UUID) (int64, error) {
 	}
 
 	return s.deliveries.DeleteByID(deliveryID)
+}
+
+func (s *Service) GetDeliveryByID(deliveryID uuid.UUID) (storage.Delivery, error) {
+	if deliveryID == uuid.Nil {
+		return storage.Delivery{}, ErrInvalidInput
+	}
+
+	d, err := s.deliveries.GetByID(deliveryID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return storage.Delivery{}, ErrNotFound
+		}
+		return storage.Delivery{}, err
+	}
+
+	return d, nil
+}
+
+func isValidStatusTransition(from, to storage.DeliveryStatus) bool {
+	switch from {
+	case storage.StatusAwaiting:
+		return to == storage.StatusProcessing
+	case storage.StatusProcessing:
+		return to == storage.StatusChecked
+	case storage.StatusChecked:
+		return to == storage.StatusOnPath
+	case storage.StatusOnPath:
+		return to == storage.StatusAccepted
+	default:
+		return false
+	}
 }
