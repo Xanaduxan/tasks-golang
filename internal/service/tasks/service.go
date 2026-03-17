@@ -1,10 +1,12 @@
 package tasks
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
 
+	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
 	"github.com/Xanaduxan/tasks-golang/internal/events"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/google/uuid"
@@ -16,6 +18,7 @@ type Service struct {
 	groups       *storage.GroupStorage
 	groupMembers *storage.GroupMemberStorage
 	notifier     Notifier
+	cache        *internalredis.Redis
 }
 
 func NewService(
@@ -24,6 +27,7 @@ func NewService(
 	groups *storage.GroupStorage,
 	groupMembers *storage.GroupMemberStorage,
 	notifier Notifier,
+	cache *internalredis.Redis,
 ) *Service {
 	return &Service{
 		tasks:        tasks,
@@ -31,6 +35,7 @@ func NewService(
 		groups:       groups,
 		groupMembers: groupMembers,
 		notifier:     notifier,
+		cache:        cache,
 	}
 }
 
@@ -90,12 +95,23 @@ func (s *Service) getTask(taskID uuid.UUID) (storage.Task, error) {
 		return storage.Task{}, ErrInvalidInput
 	}
 
+	if s.cache != nil {
+		cachedTask, ok := s.cache.GetTask(context.Background(), taskID)
+		if ok {
+			return *cachedTask, nil
+		}
+	}
+
 	t, err := s.tasks.GetByID(taskID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return storage.Task{}, ErrNotFound
 		}
 		return storage.Task{}, err
+	}
+
+	if s.cache != nil {
+		s.cache.SetTask(context.Background(), t)
 	}
 
 	return t, nil
@@ -166,6 +182,7 @@ func (s *Service) prepareTaskUpdate(userID uuid.UUID, groupID *uuid.UUID) error 
 func (s *Service) GetTask(id, taskID uuid.UUID) (storage.Task, error) {
 	return s.getAccessibleTask(id, taskID)
 }
+
 func (s *Service) GetTaskForWorker(taskID uuid.UUID) (storage.Task, error) {
 	return s.getTask(taskID)
 }
@@ -206,7 +223,15 @@ func (s *Service) DeleteTask(id, taskID uuid.UUID) error {
 		return err
 	}
 
-	return s.tasks.DeleteByID(taskID)
+	if err := s.tasks.DeleteByID(taskID); err != nil {
+		return err
+	}
+
+	if s.cache != nil {
+		s.cache.DeleteTask(context.Background(), taskID)
+	}
+
+	return nil
 }
 
 func (s *Service) UpdateTask(id, taskID uuid.UUID, name string, deadline *time.Time, groupID *uuid.UUID) error {
@@ -227,7 +252,15 @@ func (s *Service) UpdateTask(id, taskID uuid.UUID, name string, deadline *time.T
 	t.Deadline = deadline
 	t.GroupID = groupID
 
-	return s.tasks.Update(t)
+	if err := s.tasks.Update(t); err != nil {
+		return err
+	}
+
+	if s.cache != nil {
+		s.cache.DeleteTask(context.Background(), taskID)
+	}
+
+	return nil
 }
 
 func (s *Service) UpdateTaskStatus(taskID uuid.UUID, status storage.TaskStatus) error {
@@ -246,6 +279,10 @@ func (s *Service) UpdateTaskStatus(taskID uuid.UUID, status storage.TaskStatus) 
 
 	if err := s.tasks.UpdateStatus(taskID, status); err != nil {
 		return err
+	}
+
+	if s.cache != nil {
+		s.cache.DeleteTask(context.Background(), taskID)
 	}
 
 	if s.notifier != nil {

@@ -3,12 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
-	"github.com/Xanaduxan/tasks-golang/internal/config"
-	"github.com/Xanaduxan/tasks-golang/internal/http/handlers"
-	"github.com/Xanaduxan/tasks-golang/internal/http/router"
-	"github.com/Xanaduxan/tasks-golang/internal/http/websocket"
+	"github.com/Xanaduxan/tasks-golang/config"
+	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
+	redispkg "github.com/Xanaduxan/tasks-golang/pkg/redis"
+
 	"github.com/Xanaduxan/tasks-golang/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
 	"github.com/Xanaduxan/tasks-golang/internal/service/deliveries"
@@ -18,23 +17,28 @@ import (
 	"github.com/Xanaduxan/tasks-golang/internal/service/stocks"
 	"github.com/Xanaduxan/tasks-golang/internal/service/tasks"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
+	handlers "github.com/Xanaduxan/tasks-golang/internal/transport/http-handlers"
+	"github.com/Xanaduxan/tasks-golang/internal/transport/router"
+	"github.com/Xanaduxan/tasks-golang/internal/transport/websocket"
 	"github.com/Xanaduxan/tasks-golang/internal/worker"
 )
 
 func main() {
-	config.LoadEnv(".env")
+	cfg := config.MustLoad()
 
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		log.Fatal("DATABASE_URL not set")
+	db := storage.NewPostgres(cfg.DatabaseURL)
+
+	redisClient, err := redispkg.NewRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
+	if err != nil {
+		log.Printf("redis is unavailable, starting without cache: %v", err)
+	} else {
+		defer func() {
+			if err := redispkg.Close(redisClient); err != nil {
+				log.Printf("failed to close redis: %v", err)
+			}
+		}()
+		log.Println("connected to redis")
 	}
-
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		log.Fatal("JWT_SECRET not set")
-	}
-
-	db := storage.NewPostgres(dsn)
 
 	userStorage := storage.NewUserStorage(db)
 	taskStorage := storage.NewTaskStorage(db)
@@ -44,10 +48,24 @@ func main() {
 	deliveryItemsStorage := storage.NewDeliveryItemStorage(db)
 	groupsStorage := storage.NewGroupStorage(db)
 	groupMemberStorage := storage.NewGroupMemberStorage(db)
+
 	wsManager := websocket.NewManager()
 	wsNotifier := websocket.NewNotifier(wsManager, groupMemberStorage)
-	authService := auth.NewService(userStorage, []byte(jwtSecret))
-	tasksService := tasks.NewService(taskStorage, userStorage, groupsStorage, groupMemberStorage, wsNotifier)
+
+	authService := auth.NewService(userStorage, []byte(cfg.JWTSecret))
+	var redisCache *internalredis.Redis
+	if redisClient != nil {
+		redisCache = internalredis.NewRedis(redisClient)
+	}
+
+	tasksService := tasks.NewService(
+		taskStorage,
+		userStorage,
+		groupsStorage,
+		groupMemberStorage,
+		wsNotifier,
+		redisCache,
+	)
 	productService := products.NewService(productStorage)
 	stocksService := stocks.NewService(stockStorage)
 	groupsService := groups.NewGroupService(groupsStorage)
@@ -80,9 +98,9 @@ func main() {
 	handlers.SetGroupMemberService(groupMemberService)
 
 	wsHandler := websocket.NewHandler(wsManager)
+	r := router.New([]byte(cfg.JWTSecret), wsHandler)
 
-	r := router.New([]byte(jwtSecret), wsHandler)
-
-	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	addr := ":" + cfg.HTTPPort
+	log.Printf("Listening on %s", addr)
+	log.Fatal(http.ListenAndServe(addr, r))
 }
