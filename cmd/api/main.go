@@ -6,8 +6,6 @@ import (
 
 	"github.com/Xanaduxan/tasks-golang/config"
 	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
-	redispkg "github.com/Xanaduxan/tasks-golang/pkg/redis"
-
 	"github.com/Xanaduxan/tasks-golang/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
 	"github.com/Xanaduxan/tasks-golang/internal/service/deliveries"
@@ -21,6 +19,8 @@ import (
 	"github.com/Xanaduxan/tasks-golang/internal/transport/router"
 	"github.com/Xanaduxan/tasks-golang/internal/transport/websocket"
 	"github.com/Xanaduxan/tasks-golang/internal/worker"
+	_ "github.com/Xanaduxan/tasks-golang/metrics"
+	redispkg "github.com/Xanaduxan/tasks-golang/pkg/redis"
 )
 
 func main() {
@@ -66,6 +66,7 @@ func main() {
 		wsNotifier,
 		redisCache,
 	)
+	tasksService.InitMetrics()
 	productService := products.NewService(productStorage)
 	stocksService := stocks.NewService(stockStorage)
 	groupsService := groups.NewGroupService(groupsStorage)

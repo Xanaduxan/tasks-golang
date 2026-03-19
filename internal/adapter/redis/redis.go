@@ -8,7 +8,7 @@ import (
 
 const (
 	idempotencyKeyPrefix = "Idempotency:"
-	ttl                  = time.Minute * 5
+	ttl                  = time.Hour
 )
 
 type Redis struct {

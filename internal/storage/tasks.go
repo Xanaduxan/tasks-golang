@@ -133,3 +133,13 @@ func (s *TaskStorage) GetAllNotDone() ([]Task, error) {
 
 	return tasks, nil
 }
+func (s *TaskStorage) Count() (int, error) {
+	var count int
+
+	err := s.DB.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

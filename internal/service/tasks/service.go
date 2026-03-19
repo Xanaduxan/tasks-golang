@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
 	"github.com/Xanaduxan/tasks-golang/internal/events"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
+	"github.com/Xanaduxan/tasks-golang/metrics"
 	"github.com/google/uuid"
 )
 
@@ -213,7 +215,7 @@ func (s *Service) CreateTask(id uuid.UUID, name string, deadline *time.Time, gro
 	if err := s.tasks.Create(t); err != nil {
 		return uuid.Nil, err
 	}
-
+	time.Sleep(1 * time.Second)
 	return t.ID, nil
 }
 
@@ -302,4 +304,14 @@ func (s *Service) UpdateTaskStatus(taskID uuid.UUID, status storage.TaskStatus) 
 
 func (s *Service) GetAllNotDone() ([]storage.Task, error) {
 	return s.tasks.GetAllNotDone()
+}
+
+func (s *Service) InitMetrics() {
+	count, err := s.tasks.Count()
+	if err != nil {
+		log.Printf("failed to count tasks: %v", err)
+		return
+	}
+
+	metrics.TasksCurrent.Set(float64(count))
 }

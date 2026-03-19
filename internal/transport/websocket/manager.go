@@ -3,6 +3,7 @@ package websocket
 import (
 	"sync"
 
+	"github.com/Xanaduxan/tasks-golang/metrics"
 	"github.com/google/uuid"
 	gws "github.com/gorilla/websocket"
 )
@@ -27,7 +28,10 @@ func (m *Manager) Register(userID uuid.UUID, conn *gws.Conn) {
 		m.clients[userID] = make(map[*gws.Conn]bool)
 	}
 
-	m.clients[userID][conn] = true
+	if !m.clients[userID][conn] {
+		m.clients[userID][conn] = true
+		metrics.WebSocketConnectionsActive.Inc()
+	}
 }
 
 func (m *Manager) Unregister(userID uuid.UUID, conn *gws.Conn) {
@@ -35,7 +39,10 @@ func (m *Manager) Unregister(userID uuid.UUID, conn *gws.Conn) {
 	defer m.mu.Unlock()
 
 	if conns, ok := m.clients[userID]; ok {
-		delete(conns, conn)
+		if _, exists := conns[conn]; exists {
+			delete(conns, conn)
+			metrics.WebSocketConnectionsActive.Dec()
+		}
 
 		if len(conns) == 0 {
 			delete(m.clients, userID)
@@ -47,16 +54,24 @@ func (m *Manager) Unregister(userID uuid.UUID, conn *gws.Conn) {
 
 func (m *Manager) SendToUser(userID uuid.UUID, message []byte) {
 	m.mu.RLock()
-	defer m.mu.RUnlock()
 
 	conns, ok := m.clients[userID]
 	if !ok {
+		m.mu.RUnlock()
 		return
 	}
 
+	var toRemove []*gws.Conn
+
 	for conn := range conns {
 		if err := conn.WriteMessage(gws.TextMessage, message); err != nil {
-			_ = conn.Close()
+			toRemove = append(toRemove, conn)
 		}
+	}
+
+	m.mu.RUnlock()
+
+	for _, conn := range toRemove {
+		m.Unregister(userID, conn)
 	}
 }

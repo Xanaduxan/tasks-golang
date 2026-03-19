@@ -5,6 +5,7 @@ import (
 
 	"github.com/Xanaduxan/tasks-golang/internal/transport/http-handlers"
 	"github.com/Xanaduxan/tasks-golang/internal/transport/http-handlers/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func New(jwtSecret []byte, wsHandler http.Handler) http.Handler {
@@ -96,6 +97,7 @@ func New(jwtSecret []byte, wsHandler http.Handler) http.Handler {
 	)
 
 	mux.Handle("GET /ws", wsHandler)
+	mux.Handle("/metrics", promhttp.Handler())
 
 	return mux
 }

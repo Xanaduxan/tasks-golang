@@ -1,7 +1,21 @@
 services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://tasks:taskspass@db:5432/tasks?sslmode=disable
+      JWT_SECRET: your-secret-key
+      HTTP_PORT: 8080
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+    depends_on:
+      - db
+      - redis
+
   db:
     image: postgres:16
-    container_name: tasks-postgres
     environment:
       POSTGRES_DB: tasks
       POSTGRES_USER: tasks
@@ -11,6 +25,29 @@ services:
     volumes:
       - tasks_pgdata:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  redis-ui:
+    image: rediscommander/redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - app
 
 volumes:
   tasks_pgdata:
