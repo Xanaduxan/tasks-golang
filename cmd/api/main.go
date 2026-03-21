@@ -42,6 +42,7 @@ func main() {
 
 	userStorage := storage.NewUserStorage(db)
 	taskStorage := storage.NewTaskStorage(db)
+	taskCached := storage.NewTaskCached(taskStorage, redisClient)
 	productStorage := storage.NewProductStorage(db)
 	stockStorage := storage.NewStockStorage(db)
 	deliveryStorage := storage.NewDeliveryStorage(db)
@@ -53,18 +54,13 @@ func main() {
 	wsNotifier := websocket.NewNotifier(wsManager, groupMemberStorage)
 
 	authService := auth.NewService(userStorage, []byte(cfg.JWTSecret))
-	var redisCache *internalredis.Redis
-	if redisClient != nil {
-		redisCache = internalredis.NewRedis(redisClient)
-	}
 
 	tasksService := tasks.NewService(
-		taskStorage,
+		taskCached,
 		userStorage,
 		groupsStorage,
 		groupMemberStorage,
 		wsNotifier,
-		redisCache,
 	)
 	tasksService.InitMetrics()
 	productService := products.NewService(productStorage)
