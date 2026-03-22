@@ -2,13 +2,22 @@ package stocks
 
 import (
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
+	"github.com/google/uuid"
 )
 
+type StockInterface interface {
+	Create(stock storage.Stock) error
+	GetByID(productId uuid.UUID) (storage.Stock, error)
+	GetStocks() ([]storage.Stock, error)
+	Update(stock storage.Stock) (int64, error)
+	DeleteByID(productId uuid.UUID) (int64, error)
+	Increase(productID uuid.UUID, qty int64) error
+}
 type Service struct {
-	stocks *storage.StockStorage
+	stocks StockInterface
 }
 
-func NewService(stocks *storage.StockStorage) *Service {
+func NewService(stocks StockInterface) *Service {
 	return &Service{stocks: stocks}
 }
 

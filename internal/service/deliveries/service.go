@@ -6,25 +6,44 @@ import (
 	"time"
 
 	"github.com/Xanaduxan/tasks-golang/internal/events"
+	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
+	"github.com/Xanaduxan/tasks-golang/internal/service/products"
+	"github.com/Xanaduxan/tasks-golang/internal/service/stocks"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/google/uuid"
 )
 
+type DeliveryInterface interface {
+	Create(delivery storage.Delivery) error
+	GetByID(id uuid.UUID) (storage.Delivery, error)
+	Update(delivery storage.Delivery) (int64, error)
+	DeleteByID(id uuid.UUID) (int64, error)
+	GetByUserID(userID uuid.UUID) ([]storage.Delivery, error)
+	GetAllNotAccepted() ([]storage.Delivery, error)
+}
+
+type DeliveryItemsInterface interface {
+	Create(deliveryItem storage.DeliveryItem) error
+	GetByID(id uuid.UUID) (storage.DeliveryItem, error)
+	Update(deliveryItem storage.DeliveryItem) (int64, error)
+	DeleteByID(id uuid.UUID) (int64, error)
+	GetByDeliveryID(deliveryID uuid.UUID) ([]storage.DeliveryItem, error)
+}
 type Service struct {
-	products      *storage.ProductStorage
-	users         *storage.UserStorage
-	deliveries    *storage.DeliveryStorage
-	deliveryItems *storage.DeliveryItemStorage
-	stocks        *storage.StockStorage
+	products      products.ProductInterface
+	users         auth.UserInterface
+	deliveries    DeliveryInterface
+	deliveryItems DeliveryItemsInterface
+	stocks        stocks.StockInterface
 	notifier      Notifier
 }
 
 func NewService(
-	products *storage.ProductStorage,
-	users *storage.UserStorage,
-	deliveries *storage.DeliveryStorage,
-	deliveryItems *storage.DeliveryItemStorage,
-	stocks *storage.StockStorage,
+	products products.ProductInterface,
+	users auth.UserInterface,
+	deliveries DeliveryInterface,
+	deliveryItems DeliveryItemsInterface,
+	stocks stocks.StockInterface,
 	notifier Notifier,
 ) *Service {
 	return &Service{

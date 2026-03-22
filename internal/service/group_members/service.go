@@ -4,18 +4,28 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
+	"github.com/Xanaduxan/tasks-golang/internal/service/groups"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/google/uuid"
 )
 
+type GroupMemberInterface interface {
+	Create(member storage.GroupMember) error
+	GetByID(groupID, userID uuid.UUID) (storage.GroupMember, error)
+	GetByGroupID(groupID uuid.UUID) ([]storage.GroupMember, error)
+	Update(member storage.GroupMember) error
+	DeleteByID(groupID, userID uuid.UUID) error
+	IsMember(groupID, userID uuid.UUID) (bool, error)
+}
 type GroupMemberService struct {
-	members *storage.GroupMemberStorage
-	groups  *storage.GroupStorage
-	users   *storage.UserStorage
+	members GroupMemberInterface
+	groups  groups.GroupInterface
+	users   auth.UserInterface
 }
 
 func NewGroupMemberService(
-	members *storage.GroupMemberStorage,
+	members GroupMemberInterface,
 	groups *storage.GroupStorage,
 	users *storage.UserStorage,
 ) *GroupMemberService {

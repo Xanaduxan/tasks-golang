@@ -11,12 +11,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserInterface interface {
+	Create(user storage.User) error
+	GetByEmail(email string) (storage.User, error)
+	GetByID(id uuid.UUID) (storage.User, error)
+	DeleteByID(id uuid.UUID) error
+}
 type Service struct {
-	users     *storage.UserStorage
+	users     UserInterface
 	jwtSecret []byte
 }
 
-func NewService(users *storage.UserStorage, jwtSecret []byte) *Service {
+func NewService(users UserInterface, jwtSecret []byte) *Service {
 	return &Service{users: users, jwtSecret: jwtSecret}
 }
 

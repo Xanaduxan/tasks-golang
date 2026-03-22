@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Xanaduxan/tasks-golang/config"
-	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
+
 	"github.com/Xanaduxan/tasks-golang/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
 	"github.com/Xanaduxan/tasks-golang/internal/service/deliveries"

@@ -8,11 +8,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type GroupInterface interface {
+	Create(group storage.Group) error
+	GetByID(id uuid.UUID) (storage.Group, error)
+}
 type GroupService struct {
-	groups *storage.GroupStorage
+	groups GroupInterface
 }
 
-func NewGroupService(groups *storage.GroupStorage) *GroupService {
+func NewGroupService(groups GroupInterface) *GroupService {
 	return &GroupService{
 		groups: groups,
 	}

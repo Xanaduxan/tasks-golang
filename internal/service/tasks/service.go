@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	internalredis "github.com/Xanaduxan/tasks-golang/internal/adapter/redis"
 	"github.com/Xanaduxan/tasks-golang/internal/events"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/Xanaduxan/tasks-golang/metrics"

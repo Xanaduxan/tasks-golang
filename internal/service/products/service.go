@@ -9,11 +9,18 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type ProductInterface interface {
+	Create(product storage.Product) error
+	GetByID(id uuid.UUID) (storage.Product, error)
+	Update(product storage.Product) (int64, error)
+	DeleteByID(id uuid.UUID) (int64, error)
+	GetProducts() ([]storage.Product, error)
+}
 type Service struct {
-	products *storage.ProductStorage
+	products ProductInterface
 }
 
-func NewService(products *storage.ProductStorage) *Service {
+func NewService(products ProductInterface) *Service {
 	return &Service{products: products}
 }
 
