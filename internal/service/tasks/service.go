@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type tasksInterface interface {
+type TaskInterface interface {
 	Create(task storage.Task) error
 	GetByID(id uuid.UUID) (storage.Task, error)
 	Update(task storage.Task) error
@@ -26,18 +26,18 @@ type tasksInterface interface {
 	Count() (int, error)
 }
 type Service struct {
-	tasks        tasksInterface
+	tasks        TaskInterface
 	users        auth.UserInterface
 	groups       groups.GroupInterface
-	groupMembers group_members.GroupMemberService
+	groupMembers group_members.GroupMemberInterface
 	notifier     Notifier
 }
 
 func NewService(
-	tasks tasksInterface,
+	tasks TaskInterface,
 	users auth.UserInterface,
 	groups groups.GroupInterface,
-	groupMembers group_members.GroupMemberService,
+	groupMembers group_members.GroupMemberInterface,
 	notifier Notifier,
 
 ) *Service {
