@@ -26,8 +26,8 @@ type GroupMemberService struct {
 
 func NewGroupMemberService(
 	members GroupMemberInterface,
-	groups *storage.GroupStorage,
-	users *storage.UserStorage,
+	groups groups.GroupInterface,
+	users auth.UserInterface,
 ) *GroupMemberService {
 	return &GroupMemberService{
 		members: members,
@@ -155,4 +155,7 @@ func (s *GroupMemberService) DeleteMember(groupID, userID uuid.UUID) error {
 	}
 
 	return nil
+}
+func (s *GroupMemberService) IsMember(groupID, userID uuid.UUID) (bool, error) {
+	return s.members.IsMember(groupID, userID)
 }

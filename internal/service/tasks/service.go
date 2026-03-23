@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/Xanaduxan/tasks-golang/internal/events"
+	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
+	"github.com/Xanaduxan/tasks-golang/internal/service/group_members"
+	"github.com/Xanaduxan/tasks-golang/internal/service/groups"
 	"github.com/Xanaduxan/tasks-golang/internal/storage"
 	"github.com/Xanaduxan/tasks-golang/metrics"
 	"github.com/google/uuid"
@@ -24,17 +27,17 @@ type tasksInterface interface {
 }
 type Service struct {
 	tasks        tasksInterface
-	users        *storage.UserStorage
-	groups       *storage.GroupStorage
-	groupMembers *storage.GroupMemberStorage
+	users        auth.UserInterface
+	groups       groups.GroupInterface
+	groupMembers group_members.GroupMemberService
 	notifier     Notifier
 }
 
 func NewService(
 	tasks tasksInterface,
-	users *storage.UserStorage,
-	groups *storage.GroupStorage,
-	groupMembers *storage.GroupMemberStorage,
+	users auth.UserInterface,
+	groups groups.GroupInterface,
+	groupMembers group_members.GroupMemberService,
 	notifier Notifier,
 
 ) *Service {
