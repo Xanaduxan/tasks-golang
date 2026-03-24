@@ -188,3 +188,28 @@ func (h *TaskHandler) DeleteTask(
 
 	return &taskv1.DeleteTaskResponse{}, nil
 }
+func (h *TaskHandler) SearchTasks(
+	ctx context.Context,
+	req *taskv1.SearchTasksRequest,
+) (*taskv1.SearchTasksResponse, error) {
+
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, err
+	}
+
+	tasks, err := h.service.SearchTasks(userID, req.Query)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &taskv1.SearchTasksResponse{
+		Tasks: make([]*taskv1.Task, 0, len(tasks)),
+	}
+
+	for _, t := range tasks {
+		resp.Tasks = append(resp.Tasks, mapper.TaskToProto(t))
+	}
+
+	return resp, nil
+}

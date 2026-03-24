@@ -109,29 +109,7 @@ func (s *TaskStorage) GetAllNotDone() ([]Task, error) {
 	}
 	defer rows.Close()
 
-	var tasks []Task
-	for rows.Next() {
-		var t Task
-
-		if err := rows.Scan(
-			&t.ID,
-			&t.Name,
-			&t.Deadline,
-			&t.UserID,
-			&t.GroupID,
-			&t.Status,
-		); err != nil {
-			return nil, err
-		}
-
-		tasks = append(tasks, t)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return tasks, nil
+	return scanTasks(rows)
 }
 
 func (s *TaskStorage) GetByUserID(userID uuid.UUID) ([]Task, error) {
@@ -146,7 +124,37 @@ func (s *TaskStorage) GetByUserID(userID uuid.UUID) ([]Task, error) {
 	}
 	defer rows.Close()
 
+	return scanTasks(rows)
+}
+
+func (s *TaskStorage) Count() (int, error) {
+	var count int
+
+	err := s.DB.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+func (s *TaskStorage) SearchTasks(userID uuid.UUID, query string) ([]Task, error) {
+	rows, err := s.DB.Query(`
+		SELECT id, name, deadline, user_id, group_id, status
+		FROM tasks
+		WHERE user_id = $1
+		  AND search_vector @@ plainto_tsquery('simple', $2)
+		ORDER BY ts_rank(search_vector, plainto_tsquery('simple', $2)) DESC
+	`, userID, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanTasks(rows)
+}
+func scanTasks(rows *sql.Rows) ([]Task, error) {
 	var tasks []Task
+
 	for rows.Next() {
 		var t Task
 		err := rows.Scan(
@@ -168,15 +176,4 @@ func (s *TaskStorage) GetByUserID(userID uuid.UUID) ([]Task, error) {
 	}
 
 	return tasks, nil
-}
-
-func (s *TaskStorage) Count() (int, error) {
-	var count int
-
-	err := s.DB.QueryRow(`SELECT COUNT(*) FROM tasks`).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }

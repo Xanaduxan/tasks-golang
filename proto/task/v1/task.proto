@@ -10,6 +10,7 @@ service TaskService {
   rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
   rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
   rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+  rpc SearchTasks(SearchTasksRequest) returns (SearchTasksResponse);
 }
 
 message Task {
@@ -65,3 +66,12 @@ message DeleteTaskRequest {
 }
 
 message DeleteTaskResponse {}
+
+message SearchTasksRequest {
+  string user_id = 1;
+  string query = 2;
+}
+
+message SearchTasksResponse {
+  repeated Task tasks = 1;
+}

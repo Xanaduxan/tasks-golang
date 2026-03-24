@@ -141,5 +141,27 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func SearchTasks(w http.ResponseWriter, r *http.Request) {
+	userID, ok := userIDFromContext(r)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		http.Error(w, "query parameter q is required", http.StatusBadRequest)
+		return
+	}
+
+	foundTasks, err := taskService.SearchTasks(userID, query)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, foundTasks)
+}
+
 func (req CreateTaskRequest) Validate() error { return validateTask(req.Name, req.Deadline) }
 func (req UpdateTaskRequest) Validate() error { return validateTask(req.Name, req.Deadline) }

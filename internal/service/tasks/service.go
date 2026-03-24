@@ -25,6 +25,7 @@ type TaskInterface interface {
 	GetAllNotDone() ([]storage.Task, error)
 	Count() (int, error)
 	GetByUserID(userID uuid.UUID) ([]storage.Task, error)
+	SearchTasks(userID uuid.UUID, query string) ([]storage.Task, error)
 }
 type Service struct {
 	tasks        TaskInterface
@@ -310,4 +311,16 @@ func (s *Service) InitMetrics() {
 	}
 
 	metrics.TasksCurrent.Set(float64(count))
+}
+func (s *Service) SearchTasks(userID uuid.UUID, query string) ([]storage.Task, error) {
+	if query == "" {
+		return nil, ErrInvalidInput
+	}
+
+	_, err := s.getUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.tasks.SearchTasks(userID, query)
 }

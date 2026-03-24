@@ -23,6 +23,10 @@ func New(jwtSecret []byte, wsHandler http.Handler) http.Handler {
 		middleware.JWT(jwtSecret)(http.HandlerFunc(http_handlers.CreateTask)),
 	)
 	mux.Handle(
+		"GET /task/search",
+		middleware.JWT(jwtSecret)(http.HandlerFunc(http_handlers.SearchTasks)),
+	)
+	mux.Handle(
 		"PUT /task/{id}",
 		middleware.JWT(jwtSecret)(http.HandlerFunc(http_handlers.UpdateTask)),
 	)

@@ -147,3 +147,6 @@ func (r *TaskCached) Count() (int, error) {
 	return r.repo.Count()
 }
 func (r *TaskCached) GetByUserID(userID uuid.UUID) ([]Task, error) { return r.repo.GetByUserID(userID) }
+func (r *TaskCached) SearchTasks(userID uuid.UUID, query string) ([]Task, error) {
+	return r.repo.SearchTasks(userID, query)
+}
