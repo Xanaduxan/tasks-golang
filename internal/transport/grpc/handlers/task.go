@@ -127,3 +127,64 @@ func (h *TaskHandler) ListTasks(
 
 	return resp, nil
 }
+func (h *TaskHandler) UpdateTask(
+	ctx context.Context,
+	req *taskv1.UpdateTaskRequest,
+) (*taskv1.UpdateTaskResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+	}
+
+	taskID, err := uuid.Parse(req.TaskId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid task_id")
+	}
+
+	var groupID *uuid.UUID
+	if req.GroupId != "" {
+		gid, err := uuid.Parse(req.GroupId)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid group_id")
+		}
+		groupID = &gid
+	}
+
+	var deadline *time.Time
+	if req.Deadline != "" {
+		t, err := time.Parse(time.RFC3339, req.Deadline)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid deadline")
+		}
+		deadline = &t
+	}
+
+	err = h.service.UpdateTask(userID, taskID, req.Name, deadline, groupID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &taskv1.UpdateTaskResponse{}, nil
+}
+
+func (h *TaskHandler) DeleteTask(
+	ctx context.Context,
+	req *taskv1.DeleteTaskRequest,
+) (*taskv1.DeleteTaskResponse, error) {
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+	}
+
+	taskID, err := uuid.Parse(req.TaskId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid task_id")
+	}
+
+	err = h.service.DeleteTask(userID, taskID)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	return &taskv1.DeleteTaskResponse{}, nil
+}

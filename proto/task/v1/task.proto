@@ -8,6 +8,8 @@ service TaskService {
   rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
   rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
   rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
 }
 
 message Task {
@@ -46,3 +48,20 @@ message ListTasksRequest {
 message ListTasksResponse {
   repeated Task tasks = 1;
 }
+
+message UpdateTaskRequest {
+  string user_id = 1;
+  string task_id = 2;
+  string name = 3;
+  string group_id = 4;
+  string deadline = 5;
+}
+
+message UpdateTaskResponse {}
+
+message DeleteTaskRequest {
+  string user_id = 1;
+  string task_id = 2;
+}
+
+message DeleteTaskResponse {}
