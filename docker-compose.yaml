@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "8080:8080"
+      - "50051:50051"
     environment:
       DATABASE_URL: postgres://tasks:taskspass@db:5432/tasks?sslmode=disable
       JWT_SECRET: your-secret-key

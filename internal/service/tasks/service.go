@@ -24,6 +24,7 @@ type TaskInterface interface {
 	UpdateStatus(id uuid.UUID, status storage.TaskStatus) error
 	GetAllNotDone() ([]storage.Task, error)
 	Count() (int, error)
+	GetByUserID(userID uuid.UUID) ([]storage.Task, error)
 }
 type Service struct {
 	tasks        TaskInterface
@@ -286,6 +287,15 @@ func (s *Service) UpdateTaskStatus(taskID uuid.UUID, status storage.TaskStatus) 
 	}
 
 	return nil
+}
+
+func (s *Service) ListTasks(userID uuid.UUID) ([]storage.Task, error) {
+	_, err := s.getUser(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.tasks.GetByUserID(userID)
 }
 
 func (s *Service) GetAllNotDone() ([]storage.Task, error) {

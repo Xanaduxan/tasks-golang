@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Xanaduxan/tasks-golang/config"
+	grpc "github.com/Xanaduxan/tasks-golang/internal/transport/grpc"
 
 	"github.com/Xanaduxan/tasks-golang/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/internal/service/auth"
@@ -93,6 +94,14 @@ func main() {
 	handlers.SetDeliveryQueue(deliveryQueue)
 	handlers.SetGroupService(groupsService)
 	handlers.SetGroupMemberService(groupMemberService)
+	grpcServer := grpc.NewServer(":50051", tasksService)
+
+	go func() {
+		if err := grpcServer.Run(); err != nil {
+			log.Fatalf("grpc server error: %v", err)
+		}
+	}()
+	log.Printf("gRPC server started")
 
 	wsHandler := websocket.NewHandler(wsManager)
 	r := router.New([]byte(cfg.JWTSecret), wsHandler)

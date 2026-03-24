@@ -146,3 +146,4 @@ func (r *TaskCached) GetAllNotDone() ([]Task, error) {
 func (r *TaskCached) Count() (int, error) {
 	return r.repo.Count()
 }
+func (r *TaskCached) GetByUserID(userID uuid.UUID) ([]Task, error) { return r.repo.GetByUserID(userID) }

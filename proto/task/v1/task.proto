@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package task.v1;
+
+option go_package = "github.com/Xanaduxan/tasks-golang/pkg/pb/task/v1;taskv1";
+
+service TaskService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+}
+
+message Task {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  string user_id = 4;
+  string group_id = 5;
+  string deadline = 6;
+}
+
+message CreateTaskRequest {
+  string user_id = 1;
+  string name = 2;
+  string group_id = 3;
+  string deadline = 4;
+}
+
+message CreateTaskResponse {
+  string task_id = 1;
+}
+
+message GetTaskRequest {
+  string user_id = 1;
+  string task_id = 2;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message ListTasksRequest {
+  string user_id = 1;
+}
+
+message ListTasksResponse {
+  repeated Task tasks = 1;
+}
