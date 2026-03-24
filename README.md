@@ -9,3 +9,10 @@ docker run -d --name my-redis -p 6379:6379 redis
 
 docker run -d   --name redis-ui   --network mynet   -p 8081:8081   -e REDIS_HOSTS=local:my-redis:6379   rediscommander/redis-commander
 
+protoc \
+--proto_path=. \
+--go_out=. \
+--go_opt=module=github.com/Xanaduxan/tasks-golang \
+--go-grpc_out=. \
+--go-grpc_opt=module=github.com/Xanaduxan/tasks-golang \
+proto/task/v1/task.proto
