@@ -14,7 +14,8 @@ import (
 	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/stocks"
 	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/tasks"
 	storage2 "github.com/Xanaduxan/tasks-golang/task-service/internal/storage"
-	grpctransport "github.com/Xanaduxan/tasks-golang/task-service/internal/transport/grpc"
+	grpcserver "github.com/Xanaduxan/tasks-golang/task-service/internal/transport/grpc"
+	grpcclient "github.com/Xanaduxan/tasks-golang/task-service/internal/transport/grpc/client"
 	handlers "github.com/Xanaduxan/tasks-golang/task-service/internal/transport/http-handlers"
 	"github.com/Xanaduxan/tasks-golang/task-service/internal/transport/router"
 	worker2 "github.com/Xanaduxan/tasks-golang/task-service/internal/worker"
@@ -40,7 +41,7 @@ func main() {
 		log.Println("connected to redis")
 	}
 
-	notificationClient, err := grpctransport.NewNotificationClient(cfg.NotificationAddr)
+	notificationClient, err := grpcclient.NewNotificationClient(cfg.NotificationAddr)
 	if err != nil {
 		log.Printf("notification service unavailable, starting without notifications: %v", err)
 	} else {
@@ -63,11 +64,12 @@ func main() {
 	groupMemberStorage := storage2.NewGroupMemberStorage(db)
 
 	authService := auth.NewService(userStorage, []byte(cfg.JWTSecret))
+	groupsService := groups.NewGroupService(groupsStorage)
 
 	tasksService := tasks.NewService(
 		taskCached,
 		userStorage,
-		groupsStorage,
+		groupsService,
 		groupMemberStorage,
 		notificationClient,
 	)
@@ -75,7 +77,6 @@ func main() {
 
 	productService := products.NewService(productStorage)
 	stocksService := stocks.NewService(stockStorage)
-	groupsService := groups.NewGroupService(groupsStorage)
 	groupMemberService := group_members.NewGroupMemberService(groupMemberStorage, groupsStorage, userStorage)
 
 	deliveryService := deliveries.NewService(
@@ -104,9 +105,9 @@ func main() {
 	handlers.SetGroupService(groupsService)
 	handlers.SetGroupMemberService(groupMemberService)
 
-	grpcServer := grpctransport.NewServer(":50051", tasksService)
+	grpcSrv := grpcserver.NewServer(":50051", tasksService)
 	go func() {
-		if err := grpcServer.Run(); err != nil {
+		if err := grpcSrv.Run(); err != nil {
 			log.Fatalf("grpc server error: %v", err)
 		}
 	}()

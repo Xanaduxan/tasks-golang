@@ -6,15 +6,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/auth"
-	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/group_members"
-	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/groups"
 	storage2 "github.com/Xanaduxan/tasks-golang/task-service/internal/storage"
 	"github.com/Xanaduxan/tasks-golang/task-service/metrics"
 	"github.com/google/uuid"
 )
 
-type TaskInterface interface {
+type taskStorage interface {
 	Create(task storage2.Task) error
 	GetByID(id uuid.UUID) (storage2.Task, error)
 	Update(task storage2.Task) error
@@ -26,19 +23,32 @@ type TaskInterface interface {
 	GetByUserID(userID uuid.UUID) ([]storage2.Task, error)
 	SearchTasks(userID uuid.UUID, query string) ([]storage2.Task, error)
 }
+
+type userStorage interface {
+	GetByID(id uuid.UUID) (storage2.User, error)
+}
+
+type groupService interface {
+	GetGroup(groupID uuid.UUID) (storage2.Group, error)
+}
+
+type groupMemberService interface {
+	GetByGroupID(groupID uuid.UUID) ([]storage2.GroupMember, error)
+	IsMember(groupID, userID uuid.UUID) (bool, error)
+}
 type Service struct {
-	tasks        TaskInterface
-	users        auth.UserInterface
-	groups       groups.GroupInterface
-	groupMembers group_members.GroupMemberInterface
+	tasks        taskStorage
+	users        userStorage
+	groups       groupService
+	groupMembers groupMemberService
 	notifier     Notifier
 }
 
 func NewService(
-	tasks TaskInterface,
-	users auth.UserInterface,
-	groups groups.GroupInterface,
-	groupMembers group_members.GroupMemberInterface,
+	tasks taskStorage,
+	users userStorage,
+	groups groupService,
+	groupMembers groupMemberService,
 	notifier Notifier,
 
 ) *Service {
@@ -75,7 +85,7 @@ func (s *Service) getGroup(id *uuid.UUID) (*storage2.Group, error) {
 		return nil, ErrInvalidInput
 	}
 
-	g, err := s.groups.GetByID(*id)
+	g, err := s.groups.GetGroup(*id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
