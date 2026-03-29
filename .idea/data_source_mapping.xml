@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
-    <file url="file://$PROJECT_DIR$/internal/storage/tasks.go" value="a9bc4652-d521-4fa8-9078-3d7a78077fe2" />
+    <file url="file://$PROJECT_DIR$/task-service/internal/storage/tasks.go" value="a9bc4652-d521-4fa8-9078-3d7a78077fe2" />
   </component>
 </project>

@@ -1,6 +1,8 @@
 services:
-  app:
-    build: .
+  task-service:
+    build:
+      context: .
+      dockerfile: task-service/Dockerfile
     ports:
       - "8080:8080"
       - "50051:50051"
@@ -11,9 +13,19 @@ services:
       REDIS_ADDR: redis:6379
       REDIS_PASSWORD: ""
       REDIS_DB: 0
+      NOTIFICATION_ADDR: notification-service:50052
     depends_on:
       - db
       - redis
+      - notification-service
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    ports:
+      - "8081:8081"
+      - "50052:50052"
 
   db:
     container_name: tasks-postgres
@@ -26,7 +38,7 @@ services:
       - "5432:5432"
     volumes:
       - tasks_pgdata:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./task-service/migrations:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:7
@@ -36,20 +48,11 @@ services:
   redis-ui:
     image: rediscommander/redis-commander
     ports:
-      - "8081:8081"
+      - "8082:8081"
     environment:
       REDIS_HOSTS: local:redis:6379
     depends_on:
       - redis
-
-  prometheus:
-    image: prom/prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on:
-      - app
 
 volumes:
   tasks_pgdata:

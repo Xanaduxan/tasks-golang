@@ -11,8 +11,16 @@ docker run -d   --name redis-ui   --network mynet   -p 8081:8081   -e REDIS_HOST
 
 protoc \
 --proto_path=. \
---go_out=. \
---go_opt=module=github.com/Xanaduxan/tasks-golang \
---go-grpc_out=. \
---go-grpc_opt=module=github.com/Xanaduxan/tasks-golang \
+--go_out=task-service \
+--go_opt=module=github.com/Xanaduxan/tasks-golang/task-service \
+--go-grpc_out=task-service \
+--go-grpc_opt=module=github.com/Xanaduxan/tasks-golang/task-service \
 proto/task/v1/task.proto
+
+protoc \
+--proto_path=. \
+--go_out=notification-service \
+--go_opt=module=github.com/Xanaduxan/tasks-golang/notification-service \
+--go-grpc_out=notification-service \
+--go-grpc_opt=module=github.com/Xanaduxan/tasks-golang/notification-service \
+proto/notification/v1/notification.proto

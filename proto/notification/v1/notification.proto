@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "github.com/Xanaduxan/tasks-golang/notification-service/pkg/pb/notification/v1;notificationpb";
+
+service NotificationService {
+  rpc SendNotification (SendNotificationRequest) returns (SendNotificationResponse);
+}
+
+message SendNotificationRequest {
+  repeated string user_ids = 1;
+  string type = 2;
+  string entity_id = 3;
+  string status = 4;
+  string timestamp = 5;
+}
+
+message SendNotificationResponse {
+  bool ok = 1;
+}

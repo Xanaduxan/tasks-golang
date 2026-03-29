@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package task.v1;
 
-option go_package = "github.com/Xanaduxan/tasks-golang/pkg/pb/task/v1;taskv1";
+option go_package = "github.com/Xanaduxan/tasks-golang/task-service/pkg/pb/task/v1;taskpb";
 
 service TaskService {
   rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
