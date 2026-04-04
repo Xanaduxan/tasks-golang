@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Xanaduxan/tasks-golang/task-service/config"
+	"github.com/Xanaduxan/tasks-golang/task-service/internal/kafka"
 	queue2 "github.com/Xanaduxan/tasks-golang/task-service/internal/queue"
 	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/auth"
 	"github.com/Xanaduxan/tasks-golang/task-service/internal/service/deliveries"
@@ -26,7 +27,17 @@ import (
 
 func main() {
 	cfg := config.MustLoad()
-
+	kafkaPublisher, err := kafka.NewPublisher([]string{cfg.KafkaBrokers})
+	if err != nil {
+		log.Printf("kafka is unavailable, starting without events: %v", err)
+	} else {
+		defer func() {
+			if err := kafkaPublisher.Close(); err != nil {
+				log.Printf("failed to close kafka publisher: %v", err)
+			}
+		}()
+		log.Println("connected to kafka")
+	}
 	db := storage2.NewPostgres(cfg.DatabaseURL)
 
 	redisClient, err := redispkg.NewRedis(cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB)
@@ -72,6 +83,7 @@ func main() {
 		groupsService,
 		groupMemberStorage,
 		notificationClient,
+		kafkaPublisher,
 	)
 	tasksService.InitMetrics()
 

@@ -18,6 +18,7 @@ type Config struct {
 	RedisDB       int
 
 	NotificationAddr string
+	KafkaBrokers     string
 }
 
 func MustLoad() Config {
@@ -31,6 +32,7 @@ func MustLoad() Config {
 		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
 		RedisDB:          getEnvInt("REDIS_DB", 0),
 		NotificationAddr: getEnv("NOTIFICATION_ADDR", "localhost:50052"),
+		KafkaBrokers:     getEnv("KAFKA_BROKERS", "localhost:9092"),
 	}
 
 	if cfg.DatabaseURL == "" {

@@ -3,7 +3,7 @@ docker compose down
 docker compose up -d
 
 
-docker exec -i tasks-postgres psql -U tasks -d tasks < migrations/003_create_products_delivery_stocks.sql
+docker exec -i tasks-postgres psql -U tasks -d tasks < task-service/migrations/009_create_task_event_log.sql
 
 docker run -d --name my-redis -p 6379:6379 redis
 

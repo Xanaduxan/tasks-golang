@@ -1,11 +1,13 @@
 package tasks
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
 	"time"
 
+	"github.com/Xanaduxan/tasks-golang/task-service/internal/events"
 	storage2 "github.com/Xanaduxan/tasks-golang/task-service/internal/storage"
 	"github.com/Xanaduxan/tasks-golang/task-service/metrics"
 	"github.com/google/uuid"
@@ -42,6 +44,7 @@ type Service struct {
 	groups       groupService
 	groupMembers groupMemberService
 	notifier     Notifier
+	publisher    EventPublisher
 }
 
 func NewService(
@@ -50,6 +53,7 @@ func NewService(
 	groups groupService,
 	groupMembers groupMemberService,
 	notifier Notifier,
+	publisher EventPublisher,
 
 ) *Service {
 	return &Service{
@@ -58,6 +62,7 @@ func NewService(
 		groups:       groups,
 		groupMembers: groupMembers,
 		notifier:     notifier,
+		publisher:    publisher,
 	}
 }
 
@@ -224,7 +229,22 @@ func (s *Service) CreateTask(id uuid.UUID, name string, deadline *time.Time, gro
 	if err := s.tasks.Create(t); err != nil {
 		return uuid.Nil, err
 	}
-	time.Sleep(1 * time.Second)
+	if s.publisher != nil {
+		event := events.TaskEvent{
+			EventID:        uuid.New(),
+			TaskID:         t.ID,
+			UserID:         t.UserID,
+			GroupID:        t.GroupID,
+			EventType:      events.TaskCreatedEvent,
+			Status:         t.Status,
+			PreviousStatus: nil,
+			Timestamp:      time.Now().UTC(),
+		}
+		err := s.publisher.PublishTaskEvent(context.Background(), event)
+		if err != nil {
+			log.Printf("failed to publish task created event: %v", err)
+		}
+	}
 	return t.ID, nil
 }
 
@@ -262,7 +282,23 @@ func (s *Service) UpdateTask(id, taskID uuid.UUID, name string, deadline *time.T
 	if err := s.tasks.Update(t); err != nil {
 		return err
 	}
+	if s.publisher != nil {
+		event := events.TaskEvent{
+			EventID:        uuid.New(),
+			TaskID:         t.ID,
+			UserID:         t.UserID,
+			GroupID:        t.GroupID,
+			EventType:      events.TaskUpdatedEvent,
+			Status:         t.Status,
+			PreviousStatus: nil,
+			Timestamp:      time.Now().UTC(),
+		}
 
+		err := s.publisher.PublishTaskEvent(context.Background(), event)
+		if err != nil {
+			log.Printf("failed to publish task updated event: %v", err)
+		}
+	}
 	return nil
 }
 
@@ -280,8 +316,33 @@ func (s *Service) UpdateTaskStatus(taskID uuid.UUID, status storage2.TaskStatus)
 		return err
 	}
 
+	previousStatus := task.Status
+
 	if err := s.tasks.UpdateStatus(taskID, status); err != nil {
 		return err
+	}
+
+	if s.publisher != nil {
+		eventType := events.TaskStatusEvent
+		if status == storage2.StatusDone {
+			eventType = events.TaskCompletedEvent
+		}
+
+		event := events.TaskEvent{
+			EventID:        uuid.New(),
+			TaskID:         task.ID,
+			UserID:         task.UserID,
+			GroupID:        task.GroupID,
+			EventType:      eventType,
+			Status:         status,
+			PreviousStatus: &previousStatus,
+			Timestamp:      time.Now().UTC(),
+		}
+
+		err := s.publisher.PublishTaskEvent(context.Background(), event)
+		if err != nil {
+			log.Printf("failed to publish task status event: %v", err)
+		}
 	}
 
 	if s.notifier != nil {
