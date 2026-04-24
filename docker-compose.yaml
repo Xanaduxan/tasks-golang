@@ -9,7 +9,7 @@ services:
       - "8080:8080"
       - "50051:50051"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${TASKS_DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       HTTP_PORT: ${HTTP_PORT}
       REDIS_ADDR: ${REDIS_ADDR}
@@ -22,13 +22,34 @@ services:
       - redis
       - notification-service
       - kafka
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    ports:
+      - "8083:8080"
+      - "50053:50053"
+    environment:
+      DATABASE_URL: ${PAYMENTS_DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      HTTP_PORT: ${HTTP_PORT}
+      REDIS_ADDR: ${REDIS_ADDR}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: ${REDIS_DB}
+      NOTIFICATION_ADDR: ${NOTIFICATION_ADDR}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+    depends_on:
+      - payments-db
+      - redis
+      - notification-service
+      - kafka
 
   etl-worker:
     build:
       context: .
       dockerfile: etl-worker/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${TASKS_DATABASE_URL}
       KAFKA_BROKERS: ${KAFKA_BROKERS}
       KAFKA_GROUP_ID: ${KAFKA_GROUP_ID}
     depends_on:
@@ -55,6 +76,20 @@ services:
     volumes:
       - tasks_pgdata:/var/lib/postgresql/data
       - ./task-service/migrations:/docker-entrypoint-initdb.d
+
+  payments-db:
+    container_name: payments-postgres
+    image: postgres:16
+    environment:
+      POSTGRES_DB: payments
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: paymentspass
+    ports:
+      - "5433:5432"
+    volumes:
+      - payments_pgdata:/var/lib/postgresql/data
+      - ./payments-service/migrations:/docker-entrypoint-initdb.d
+
 
   redis:
     image: redis:7
@@ -89,3 +124,4 @@ services:
 
 volumes:
   tasks_pgdata:
+  payments_pgdata:

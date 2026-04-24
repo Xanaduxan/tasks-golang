@@ -5,6 +5,8 @@ docker compose up -d
 
 docker exec -i tasks-postgres psql -U tasks -d tasks < task-service/migrations/009_create_task_event_log.sql
 
+docker exec -i payments-postgres psql -U payments -d payments < payment-service/migrations/011_create_payments.sql
+
 docker run -d --name my-redis -p 6379:6379 redis
 
 docker run -d   --name redis-ui   --network mynet   -p 8081:8081   -e REDIS_HOSTS=local:my-redis:6379   rediscommander/redis-commander
